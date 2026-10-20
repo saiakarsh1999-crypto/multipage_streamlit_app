@@ -1,6 +1,6 @@
-import streamlit as st
 import time
 import numpy as np
+import streamlit as st
 
 st.set_page_config(page_title="Plotting Demo", page_icon="📈")
 
@@ -14,16 +14,20 @@ Streamlit. We're generating a bunch of random numbers in a loop for around
 
 progress_bar = st.sidebar.progress(0)
 status_text = st.sidebar.empty()
-last_rows = np.random.randn(1, 1)
-chart = st.line_chart(last_rows)
+chart = st.empty()
 
-for i in range(1, 101):
-    new_rows = last_rows[-1, :] + np.random.randn(5, 1).cumsum(axis=0)
-    status_text.text("%i%% Complete" % i)
-    chart.add_rows(new_rows)
-    progress_bar.progress(i)
-    last_rows = new_rows
-    time.sleep(0.05)
+# Initialize with initial random walk seed
+data = np.random.randn(1, 1)
+chart.line_chart(data)
+
+for i in range(1, 51):
+    new_rows = data[-1, :] + np.random.randn(5, 1).cumsum(axis=0)
+    data = np.concatenate([data, new_rows])
+    chart.line_chart(data)
+    progress = i * 2
+    status_text.text(f"{progress}% Complete")
+    progress_bar.progress(progress)
+    time.sleep(0.04)
 
 progress_bar.empty()
 

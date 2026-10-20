@@ -1,6 +1,7 @@
-import streamlit as st
+import os
 import pandas as pd
 import pydeck as pdk
+import streamlit as st
 from urllib.error import URLError
 
 st.set_page_config(page_title="Mapping Demo", page_icon="🌍")
@@ -15,16 +16,21 @@ to display geospatial data."""
 
 
 @st.cache_data
-def from_data_file(filename):
+def from_data_file(filename: str) -> pd.DataFrame:
+    # First attempt local bundled data file
+    local_path = os.path.join(os.path.dirname(__file__), "..", "data", filename)
+    if os.path.exists(local_path):
+        return pd.read_json(local_path)
+    # Fallback to remote raw GitHub content
     url = (
         "https://raw.githubusercontent.com/streamlit/"
-        "example-data/master/hello/v1/%s" % filename
+        f"example-data/master/hello/v1/{filename}"
     )
     return pd.read_json(url)
 
 
 try:
-    ALL_LAYERS = {
+    all_layers = {
         "Bike Rentals": pdk.Layer(
             "HexagonLayer",
             data=from_data_file("bike_rental_stats.json"),
@@ -48,7 +54,7 @@ try:
             get_position=["lon", "lat"],
             get_text="name",
             get_color=[0, 0, 0, 200],
-            get_size=15,
+            get_size=11,
             get_alignment_baseline="'bottom'",
         ),
         "Outbound Flow": pdk.Layer(
@@ -65,16 +71,16 @@ try:
             width_max_pixels=30,
         ),
     }
-    st.sidebar.markdown("### Map Layers")
+    st.sidebar.subheader("Map Layers")
     selected_layers = [
         layer
-        for layer_name, layer in ALL_LAYERS.items()
+        for layer_name, layer in all_layers.items()
         if st.sidebar.checkbox(layer_name, True)
     ]
     if selected_layers:
         st.pydeck_chart(
             pdk.Deck(
-                map_style="mapbox://styles/mapbox/light-v9",
+                map_style=None,
                 initial_view_state=pdk.ViewState(
                     latitude=37.76,
                     longitude=-122.4,
@@ -88,9 +94,8 @@ try:
         st.error("Please choose at least one layer above.")
 except URLError as e:
     st.error(
-        """
+        f"""
         **This demo requires internet access.**
-        Connection error: %s
-    """
-        % e.reason
+        Connection error: {e.reason}
+        """
     )
